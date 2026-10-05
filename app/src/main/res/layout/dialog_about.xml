@@ -1,0 +1,29 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:scrollbars="none">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="28dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/about" android:textSize="28sp" android:fontFamily="sans-serif-black"
+            android:textColor="@color/white" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" android:text="@string/about_tagline" android:textSize="16sp"
+            android:fontFamily="sans-serif-medium" android:textColor="@color/accent" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="12dp" android:text="@string/about_description" android:textSize="15sp"
+            android:lineSpacingExtra="4dp" android:textColor="@color/muted" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:text="@string/about_how_title" android:textSize="18sp"
+            android:fontFamily="sans-serif-medium" android:textColor="@color/white" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/about_how" android:textSize="15sp"
+            android:lineSpacingExtra="4dp" android:textColor="@color/muted" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:text="@string/about_preferences_title" android:textSize="18sp"
+            android:fontFamily="sans-serif-medium" android:textColor="@color/white" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/about_preferences" android:textSize="15sp"
+            android:lineSpacingExtra="4dp" android:textColor="@color/muted" />
+        <Button android:id="@+id/about_close" style="@style/ActionButton"
+            android:layout_marginTop="24dp" android:text="@string/about_close" />
+    </LinearLayout>
+</ScrollView>

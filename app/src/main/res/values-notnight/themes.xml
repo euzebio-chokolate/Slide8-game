@@ -1,0 +1,4 @@
+<resources>
+    <style name="BaseSlide8" parent="android:style/Theme.Material.Light.NoActionBar" />
+    <bool name="light_system_bars">true</bool>
+</resources>

@@ -16,7 +16,7 @@
                         android:textSize="12sp" android:textColor="@color/muted" android:layout_marginTop="3dp" />
                 </LinearLayout>
                 <TextView style="@style/Eyebrow" android:text="@string/board_size" android:background="@drawable/bg_pill"
-                    android:padding="12dp" android:textColor="@color/lime" android:letterSpacing="0.05" />
+                    android:padding="12dp" android:textColor="@color/accent" android:letterSpacing="0.05" />
             </LinearLayout>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp"
                 android:background="@drawable/bg_panel" android:padding="20dp" android:gravity="center_vertical">
@@ -30,13 +30,13 @@
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
                     <TextView style="@style/Eyebrow" android:text="@string/moves_label" />
                     <TextView android:id="@+id/moves" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp" android:text="@string/moves_initial" android:textSize="30sp" android:textColor="@color/lime" android:fontFamily="sans-serif-medium" />
+                        android:layout_marginTop="6dp" android:text="@string/moves_initial" android:textSize="30sp" android:textColor="@color/accent" android:fontFamily="sans-serif-medium" />
                 </LinearLayout>
             </LinearLayout>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:gravity="center_vertical">
                 <TextView style="@style/Eyebrow" android:text="@string/goal_label" android:layout_width="0dp" android:layout_weight="1" android:textSize="11sp" />
                 <TextView android:id="@+id/progress_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:textSize="12sp" android:textColor="@color/lime" />
+                    android:textSize="12sp" android:textColor="@color/accent" />
             </LinearLayout>
             <GridLayout android:id="@+id/board_grid" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginTop="12dp" android:background="@drawable/bg_board" android:padding="9dp" android:clipChildren="false"
@@ -54,7 +54,7 @@
             </GridLayout>
             <ProgressBar android:id="@+id/board_progress" style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="18dp"
-                android:max="8" android:progressTint="@color/lime" android:progressBackgroundTint="@color/border" android:importantForAccessibility="no" />
+                android:max="8" android:progressTint="@color/accent" android:progressBackgroundTint="@color/border" android:importantForAccessibility="no" />
             <TextView android:id="@+id/game_hint" android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:layout_marginTop="20dp" android:gravity="center" android:text="@string/game_hint" android:textColor="@color/muted"
                 android:textSize="14sp" android:minLines="2" android:lineSpacingExtra="3dp" android:accessibilityLiveRegion="polite" />
@@ -63,6 +63,13 @@
                     android:layout_marginEnd="6dp" android:text="@string/restart" />
                 <Button android:id="@+id/pause_game" style="@style/SecondaryButton" android:layout_width="0dp" android:layout_weight="1"
                     android:layout_marginStart="6dp" android:text="@string/pause" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:baselineAligned="false">
+                <Button android:id="@+id/game_theme" style="@style/SettingsButton"
+                    android:layout_marginEnd="6dp" android:text="@string/theme_dark" />
+                <Button android:id="@+id/game_sound" style="@style/SettingsButton"
+                    android:layout_marginStart="6dp" android:text="@string/sound_on" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

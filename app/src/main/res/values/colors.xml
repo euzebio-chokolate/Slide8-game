@@ -8,4 +8,15 @@
     <color name="lavender">#C6BBFF</color>
     <color name="tile_ink">#24223B</color>
     <color name="coral">#FFBF9B</color>
+    <color name="accent">#D6F985</color>
+    <color name="board_start">#33374F</color>
+    <color name="board_end">#25283D</color>
+    <color name="board_border">#4B4F69</color>
+    <color name="empty_surface">#191C2E</color>
+    <color name="empty_border">#535870</color>
+    <color name="pill_surface">#292C40</color>
+    <color name="screen_start">#22243C</color>
+    <color name="screen_center">#151726</color>
+    <color name="screen_end">#10121F</color>
+    <color name="secondary_surface">#24283D</color>
 </resources>

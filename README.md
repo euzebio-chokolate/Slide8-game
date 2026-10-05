@@ -64,6 +64,21 @@ estado da partida em andamento.
 - **Vamos jogar:** cria uma partida com tabuleiro solucionável.
 - **Continuar partida:** aparece quando existe uma partida incompleta e a retoma.
 - **Começar outra partida:** permite descartar a partida atual e gerar outra.
+- **Sobre o Slide8:** apresenta o jogo, as regras e as opções em um diálogo com rolagem.
+- **Tema e som:** controles disponíveis tanto no início quanto durante a partida.
+
+### Tema e sons
+
+O botão **Tema** alterna entre escuro (padrão) e claro, incluindo fundos, textos,
+tabuleiro, diálogos e barras do sistema. A troca preserva a partida e seus contadores.
+O botão **Som** ativa ou silencia os efeitos de movimento válido, nova partida e vitória.
+As duas preferências são salvas com `SharedPreferences` e persistem ao reabrir o aplicativo.
+
+Os efeitos originais em `res/raw/` são WAVs curtos reproduzidos por `SoundPool`,
+com o volume de mídia do aparelho. Ao silenciar ou sair do aplicativo, o efeito
+em execução para; ele não é retomado ao voltar. O áudio é liberado ao destruir a Activity.
+Não há downloads, permissões adicionais ou bibliotecas externas. Para regenerar
+os arquivos usando apenas Java, execute `java tests/GenerateSounds.java` na raiz.
 
 ### Tela de jogo
 
@@ -216,7 +231,8 @@ Slide8-game/
 │   └── src/main/
 │       ├── AndroidManifest.xml      # Activity inicial, tema e metadados
 │       ├── java/com/example/slide8/
-│       │   └── MainActivity.java    # Implementação do jogo
+│       │   ├── MainActivity.java    # Implementação do jogo e preferências
+│       │   └── GameSounds.java      # Efeitos sonoros nativos
 │       └── res/
 │           ├── layout/
 │           │   ├── activity_main.xml
@@ -228,7 +244,8 @@ Slide8-game/
 │           │   ├── colors.xml       # Paleta
 │           │   ├── strings.xml      # Textos em português
 │           │   └── themes.xml       # Tema e estilos
-│           ├── values-night/        # Sem tema alternativo: identidade escura
+│           ├── values-notnight/     # Paleta e tema claros
+│           ├── raw/                 # Efeitos WAV locais
 │           ├── mipmap-*/            # Ícones de inicialização
 │           └── xml/                 # Configurações padrão de backup
 ├── tests/
@@ -403,9 +420,10 @@ serviço em background ou trabalho contínuo quando o aplicativo está pausado.
 A navegação Voltar usa `OnBackInvokedDispatcher` nativo na API 33 ou superior e
 `onBackPressed()` nas versões anteriores.
 
-A restauração usa o estado de instância fornecido pelo Android. O projeto **não
-implementa salvamento permanente em disco**, banco de dados ou preferências para
-recuperar uma partida após um novo início sem estado restaurável.
+A restauração da partida usa o estado de instância fornecido pelo Android,
+inclusive na troca de tema. O projeto não salva partidas permanentemente em disco
+para um novo início sem estado restaurável. Apenas as preferências de tema e som
+são persistidas em `SharedPreferences`.
 
 ## Interface e acessibilidade
 
@@ -416,7 +434,9 @@ são definidos em XML; as fontes são fornecidas pelo sistema.
 O conteúdo tem largura máxima de **420 dp**. O `GridLayout` ajusta a altura das
 peças à largura disponível, mantendo o tabuleiro quadrado em condições normais.
 As telas usam `ScrollView` para permitir acesso aos controles quando há menos
-espaço vertical. A identidade escura é mantida nos modos claro e escuro do sistema.
+espaço vertical. O tema escolhido no aplicativo independe do tema do sistema.
+No modo claro, os destaques de texto usam verde mais escuro para manter o contraste,
+preservando as cores lavanda e verde-lima das peças.
 
 Os recursos de acessibilidade incluem:
 
@@ -549,7 +569,7 @@ foi feita para largura ímpar; alterar somente `SIZE` não generaliza o jogo.
 ## Escopo atual
 
 O projeto implementa o modo clássico 3×3 para um jogador. Não possui seleção de
-níveis, ranking, conta, anúncios, sons, dicas automáticas ou histórico permanente.
+níveis, ranking, conta, anúncios, dicas automáticas ou histórico permanente.
 O embaralhamento garante solução, mas não classifica a dificuldade da partida.
 
 Toda a lógica executada pelo aplicativo continua em **Java**, com **Views e

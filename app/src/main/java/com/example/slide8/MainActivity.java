@@ -5,6 +5,10 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,6 +31,14 @@ import java.util.Random;
 
 public class MainActivity extends Activity {
     private static final int SIZE = 3;
+    private static final String PREFERENCES = "slide8_settings";
+    private static final String DARK_THEME = "dark_theme";
+    private static final String SOUND_ENABLED = "sound_enabled";
+    private SharedPreferences preferences;
+    private GameSounds sounds;
+    private boolean darkTheme;
+    private boolean soundEnabled;
+    private boolean changingTheme;
     private final int[] board = new int[SIZE * SIZE]; // Zero representa o espaço vazio.
     private final Button[] tiles = new Button[SIZE * SIZE];
     private final Random random = new Random();
@@ -47,6 +59,7 @@ public class MainActivity extends Activity {
     private ObjectAnimator previewAnimator;
     private AlertDialog victoryDialog;
     private AlertDialog restartDialog;
+    private AlertDialog aboutDialog;
     private int moves;
     private long elapsedMillis;
     private long resumedAt;
@@ -72,12 +85,29 @@ public class MainActivity extends Activity {
     };
     private final Runnable victoryReveal = this::showVictoryDialog;
 
+    @Override
+    protected void attachBaseContext(Context base) {
+        boolean dark = base.getSharedPreferences(PREFERENCES, MODE_PRIVATE)
+                .getBoolean(DARK_THEME, true);
+        Configuration override = new Configuration();
+        override.uiMode = dark ? Configuration.UI_MODE_NIGHT_YES : Configuration.UI_MODE_NIGHT_NO;
+        super.attachBaseContext(base);
+        // Aplica somente o modo noturno; tamanho de fonte, idioma e orientação seguem o sistema.
+        applyOverrideConfiguration(override);
+    }
+
     // Button já implementa performClick; o listener o chama no toque e preserva ações assistivas.
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        preferences = getSharedPreferences(PREFERENCES, MODE_PRIVATE);
+        darkTheme = preferences.getBoolean(DARK_THEME, true);
+        soundEnabled = preferences.getBoolean(SOUND_ENABLED, true);
+        sounds = new GameSounds(this);
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
         setContentView(R.layout.activity_main);
+        configureSettings();
         timerView = findViewById(R.id.timer);
         movesView = findViewById(R.id.moves);
         hintView = findViewById(R.id.game_hint);
@@ -140,6 +170,64 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBack);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void configureSettings() {
+        if (Build.VERSION.SDK_INT >= 26) {
+            View decor = getWindow().getDecorView();
+            int flags = decor.getSystemUiVisibility();
+            decor.setSystemUiVisibility(darkTheme ? flags & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                    : flags | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+        for (int id : new int[]{R.id.home_theme, R.id.game_theme}) {
+            Button button = findViewById(id);
+            button.setText(darkTheme ? R.string.theme_dark : R.string.theme_light);
+            button.setContentDescription(getString(darkTheme
+                    ? R.string.switch_to_light : R.string.switch_to_dark));
+            button.setOnClickListener(view -> {
+                if (changingTheme) return;
+                changingTheme = true;
+                pauseTimer();
+                settleVisuals();
+                preferences.edit().putBoolean(DARK_THEME, !darkTheme).apply();
+                recreate();
+            });
+        }
+        for (int id : new int[]{R.id.home_sound, R.id.game_sound}) {
+            findViewById(id).setOnClickListener(view -> {
+                soundEnabled = !soundEnabled;
+                preferences.edit().putBoolean(SOUND_ENABLED, soundEnabled).apply();
+                updateSoundButtons();
+                if (soundEnabled) sounds.play(GameSounds.MOVE);
+            });
+        }
+        updateSoundButtons();
+        findViewById(R.id.about).setOnClickListener(view -> showAboutDialog());
+    }
+
+    private void updateSoundButtons() {
+        sounds.setEnabled(soundEnabled);
+        for (int id : new int[]{R.id.home_sound, R.id.game_sound}) {
+            Button button = findViewById(id);
+            button.setText(soundEnabled ? R.string.sound_on : R.string.sound_off);
+            button.setContentDescription(getString(soundEnabled
+                    ? R.string.disable_sound : R.string.enable_sound));
+        }
+    }
+
+    private void showAboutDialog() {
+        if (aboutDialog != null && aboutDialog.isShowing()) return;
+        View content = getLayoutInflater().inflate(R.layout.dialog_about, null);
+        aboutDialog = new AlertDialog.Builder(this).setView(content).create();
+        content.findViewById(R.id.about_close).setOnClickListener(view -> aboutDialog.dismiss());
+        aboutDialog.show();
+        Window window = aboutDialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
+            window.setLayout(Math.min(getResources().getDisplayMetrics().widthPixels - dp(40), dp(380)),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
         }
     }
 
@@ -432,6 +520,7 @@ public class MainActivity extends Activity {
         }
         moves++;
         won = isSolved(board);
+        sounds.play(won ? GameSounds.VICTORY : GameSounds.MOVE);
         victoryPending = won;
         if (won) {
             pauseTimer();
@@ -542,6 +631,7 @@ public class MainActivity extends Activity {
         updateBoard();
         updateTimer();
         showScreen(true, true);
+        sounds.play(GameSounds.SHUFFLE);
     }
 
     private long currentElapsedMillis() {
@@ -629,6 +719,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         resumed = true;
+        sounds.resume();
         startTimer();
         if (gameVisible && victoryPending) {
             handler.post(victoryReveal);
@@ -640,6 +731,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         resumed = false;
+        sounds.pause();
         pauseTimer();
         stopPreviewAnimation();
         settleVisuals();
@@ -648,6 +740,9 @@ public class MainActivity extends Activity {
         }
         if (restartDialog != null) {
             restartDialog.dismiss();
+        }
+        if (aboutDialog != null) {
+            aboutDialog.dismiss();
         }
         super.onPause();
     }
@@ -668,6 +763,7 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
         stopPreviewAnimation();
+        sounds.release();
         super.onDestroy();
     }
 }

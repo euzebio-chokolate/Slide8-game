@@ -40,6 +40,7 @@ public final class RunLogicTests {
             int result = compiler.run(null, null, null,
                     "-encoding", "UTF-8", "-cp", classpath, "-d", output.toString(),
                     root.resolve("app/src/main/java/com/example/slide8/MainActivity.java").toString(),
+                    root.resolve("app/src/main/java/com/example/slide8/GameSounds.java").toString(),
                     root.resolve("tests/PuzzleLogicTest.java").toString());
             if (result != 0) {
                 fail("Falha na compilação dos testes.");

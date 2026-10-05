@@ -1,5 +1,21 @@
 <resources>
     <string name="app_name">Slide8</string>
+    <string name="theme_dark">Tema: escuro</string>
+    <string name="theme_light">Tema: claro</string>
+    <string name="switch_to_light">Tema escuro. Ativar tema claro</string>
+    <string name="switch_to_dark">Tema claro. Ativar tema escuro</string>
+    <string name="sound_on">Som: ligado</string>
+    <string name="sound_off">Som: desligado</string>
+    <string name="disable_sound">Som ligado. Desativar sons do jogo</string>
+    <string name="enable_sound">Som desligado. Ativar sons do jogo</string>
+    <string name="about">Sobre o Slide8</string>
+    <string name="about_tagline">Um pequeno desafio. Muitas possibilidades.</string>
+    <string name="about_description">Slide8 é um quebra-cabeça de deslizar com oito peças e um espaço vazio. Jogue no seu ritmo, sem precisar de internet.</string>
+    <string name="about_how_title">Como jogar</string>
+    <string name="about_how">Arraste uma peça vizinha para o espaço vazio. Organize os números de 1 a 8, da esquerda para a direita, deixando o vazio no canto inferior direito. As peças verdes estão na posição correta.</string>
+    <string name="about_preferences_title">Do seu jeito</string>
+    <string name="about_preferences">Alterne entre tema claro e escuro e ligue ou desligue os sons pelos botões na tela inicial ou no jogo. Suas preferências ficam salvas. O volume acompanha o volume de mídia do aparelho.</string>
+    <string name="about_close">Entendi</string>
     <string name="brand">SLIDE</string>
     <string name="brand_eight">8</string>
     <string name="home_badge">SEU PRÓXIMO DESAFIO</string>

@@ -70,6 +70,8 @@ public final class DeviceSmokeTest {
         check(nodes.containsKey("start_game") && !nodes.containsKey("board_grid"),
                 "Abertura deve mostrar a tela inicial");
         screenshot("home");
+        testPreferences();
+        nodes = ui();
         tap(nodes.get("start_game"));
         nodes = ui();
         List<Integer> initial = board(nodes);
@@ -97,6 +99,18 @@ public final class DeviceSmokeTest {
         check(board(nodes).equals(expected) && nodes.get("moves").get("text").equals("1"),
                 "Arraste válido deve mover uma peça");
         screenshot("game");
+        String beforeTheme = scrollTo("game_theme").get("text");
+        tap(scrollTo("game_theme"));
+        check(!scrollTo("game_theme").get("text").equals(beforeTheme), "Tema deve alternar durante a partida");
+        scrollToTop();
+        nodes = ui();
+        check(board(nodes).equals(expected) && nodes.get("moves").get("text").equals("1"),
+                "Trocar tema deve preservar tabuleiro e movimentos");
+        check(!nodes.get("timer").get("text").equals("00:00"), "Trocar tema não deve zerar o tempo");
+        screenshot("game-alternate-theme");
+        tap(scrollTo("game_theme"));
+        scrollToTop();
+        nodes = ui();
         System.out.println("OK: tela inicial, toque sem movimento e arrastes inválidos/válido.");
 
         List<Integer> state = board(nodes);
@@ -147,6 +161,61 @@ public final class DeviceSmokeTest {
         check(nodes.get("moves").get("text").equals("0") && !board(nodes).equals(TARGET),
                 "Jogar de novo deve iniciar uma nova partida");
         System.out.println("OK: solução por gestos, diálogo de vitória e nova partida. Capturas em " + output);
+    }
+
+    private static void testPreferences() throws Exception {
+        String originalTheme = scrollTo("home_theme").get("text");
+        String originalSound = scrollTo("home_sound").get("text");
+        tap(scrollTo("home_theme"));
+        String changedTheme = scrollTo("home_theme").get("text");
+        check(!changedTheme.equals(originalTheme), "Botão deve alternar o tema");
+        screenshot("home-alternate-theme");
+        tap(scrollTo("home_sound"));
+        String changedSound = scrollTo("home_sound").get("text");
+        check(!changedSound.equals(originalSound), "Botão deve alternar o som");
+        tap(scrollTo("about"));
+        Map<String, Map<String, String>> nodes = ui();
+        check(nodes.containsKey("about_close"), "Sobre deve abrir com botão para fechar");
+        screenshot("about");
+        tap(nodes.get("about_close"));
+        adb("shell", "am", "force-stop", "com.example.slide8");
+        adb("shell", "am", "start", "-n", "com.example.slide8/.MainActivity");
+        sleep(700);
+        check(scrollTo("home_theme").get("text").equals(changedTheme), "Tema deve persistir após reabrir");
+        check(scrollTo("home_sound").get("text").equals(changedSound), "Som deve persistir após reabrir");
+        tap(scrollTo("home_theme"));
+        tap(scrollTo("home_sound"));
+        check(scrollTo("home_theme").get("text").equals(originalTheme), "Tema original deve ser restaurado");
+        check(scrollTo("home_sound").get("text").equals(originalSound), "Som original deve ser restaurado");
+        scrollToTop();
+        System.out.println("OK: Sobre, temas, som e preferências persistentes.");
+    }
+
+    private static Map<String, String> scrollTo(String id) throws Exception {
+        for (int attempt = 0; attempt < 6; attempt++) {
+            Map<String, Map<String, String>> nodes = ui();
+            Map<String, String> node = nodes.get(id);
+            if (node != null && node.get("enabled").equals("true")) return node;
+            scrollScreen(true);
+        }
+        throw new AssertionError("Controle não encontrado: " + id);
+    }
+
+    private static void scrollToTop() throws Exception {
+        scrollScreen(false);
+        scrollScreen(false);
+    }
+
+    private static void scrollScreen(boolean down) throws Exception {
+        Map<String, Map<String, String>> nodes = ui();
+        Map<String, String> screen = nodes.get(nodes.containsKey("home_screen") ? "home_screen" : "game_screen");
+        Matcher matcher = NUMBER.matcher(screen.get("bounds"));
+        int[] bounds = new int[4];
+        for (int i = 0; i < 4 && matcher.find(); i++) bounds[i] = Integer.parseInt(matcher.group());
+        int x = bounds[0] + 8; // Margem fora do tabuleiro, para não arrastar peças.
+        int top = bounds[1] + (bounds[3] - bounds[1]) / 5;
+        int bottom = bounds[3] - (bounds[3] - bounds[1]) / 5;
+        swipe(new int[]{x, down ? bottom : top}, new double[]{x, down ? top : bottom});
     }
 
     private static byte[] adb(String... command) throws IOException, InterruptedException {

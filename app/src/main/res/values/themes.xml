@@ -1,12 +1,15 @@
 <resources>
-    <style name="Theme.Slide8" parent="android:style/Theme.Material.NoActionBar">
+    <style name="BaseSlide8" parent="android:style/Theme.Material.NoActionBar" />
+    <bool name="light_system_bars">false</bool>
+    <style name="Theme.Slide8" parent="BaseSlide8">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">@color/lime</item>
+        <item name="android:colorAccent">@color/accent</item>
         <item name="android:windowBackground">@color/ink</item>
         <item name="android:colorBackground">@color/ink</item>
         <item name="android:statusBarColor">@color/ink</item>
         <item name="android:navigationBarColor">@color/ink</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
+        <item name="android:soundEffectsEnabled">false</item>
         <item name="android:textColorPrimary">@color/white</item>
         <item name="android:textColorSecondary">@color/muted</item>
         <item name="android:windowActionModeOverlay">true</item>
@@ -48,6 +51,11 @@
         <item name="android:textColor">@color/white</item>
         <item name="android:textSize">14sp</item>
         <item name="android:minHeight">52dp</item>
+    </style>
+    <style name="SettingsButton" parent="SecondaryButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:padding">10dp</item>
     </style>
     <style name="Eyebrow">
         <item name="android:layout_width">wrap_content</item>

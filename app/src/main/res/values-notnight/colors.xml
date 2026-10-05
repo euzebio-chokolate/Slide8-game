@@ -1,0 +1,18 @@
+<resources>
+    <color name="ink">#F7F5FC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="border">#D4CFE2</color>
+    <color name="white">#24223B</color>
+    <color name="muted">#625D76</color>
+    <color name="accent">#41651D</color>
+    <color name="board_start">#E8E2F5</color>
+    <color name="board_end">#DDD6EC</color>
+    <color name="board_border">#B8AECF</color>
+    <color name="empty_surface">#F3F0F8</color>
+    <color name="empty_border">#8E829F</color>
+    <color name="pill_surface">#EDE8F6</color>
+    <color name="screen_start">#EDE7FA</color>
+    <color name="screen_center">#F7F5FC</color>
+    <color name="screen_end">#FFFDFA</color>
+    <color name="secondary_surface">#F4F0FA</color>
+</resources>
