@@ -1,5 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="ink">#111321</color>
+    <color name="surface">#1D2033</color>
+    <color name="border">#34384E</color>
+    <color name="white">#F6F4FF</color>
+    <color name="muted">#ACADC4</color>
+    <color name="lime">#D6F985</color>
+    <color name="lavender">#C6BBFF</color>
+    <color name="tile_ink">#24223B</color>
+    <color name="coral">#FFBF9B</color>
 </resources>

@@ -1,0 +1,53 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/home_screen" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true" android:clipToPadding="false" android:scrollbars="none">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:orientation="vertical" android:paddingTop="24dp" android:paddingBottom="28dp">
+        <LinearLayout android:id="@+id/home_content" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginHorizontal="24dp" android:orientation="vertical" android:gravity="center_horizontal">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/brand"
+                    android:textSize="25sp" android:fontFamily="sans-serif-black" android:letterSpacing="0.10" android:textColor="@color/white" />
+                <TextView android:layout_width="32dp" android:layout_height="32dp" android:layout_marginStart="5dp" android:gravity="center"
+                    android:background="@drawable/bg_lime" android:text="@string/brand_eight" android:textSize="23sp"
+                    android:fontFamily="sans-serif-black" android:textColor="@color/tile_ink" />
+                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+                <TextView style="@style/Eyebrow" android:text="@string/home_mode" android:textSize="11sp" android:letterSpacing="0.06" />
+            </LinearLayout>
+            <TextView style="@style/Eyebrow" android:layout_marginTop="32dp" android:text="@string/home_badge" android:textColor="@color/lime" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"
+                android:text="@string/home_title" android:textSize="40sp" android:lineSpacingExtra="0dp"
+                android:fontFamily="sans-serif-black" android:gravity="center" android:textColor="@color/white" />
+            <FrameLayout android:layout_width="match_parent" android:layout_height="248dp" android:layout_marginTop="8dp"
+                android:clipChildren="false" android:clipToPadding="false" android:importantForAccessibility="noHideDescendants">
+                <TextView android:layout_width="44dp" android:layout_height="44dp" android:layout_gravity="start|center_vertical"
+                    android:layout_marginStart="12dp" android:text="@string/victory_star" android:gravity="center" android:rotation="-12"
+                    android:textSize="36sp" android:textColor="@color/lime" />
+                <TextView android:layout_width="32dp" android:layout_height="32dp" android:layout_gravity="end|top"
+                    android:layout_marginTop="22dp" android:layout_marginEnd="6dp" android:text="@string/victory_star" android:gravity="center"
+                    android:textSize="23sp" android:textColor="@color/coral" />
+                <GridLayout android:id="@+id/home_preview" android:layout_width="218dp" android:layout_height="218dp"
+                    android:layout_gravity="center" android:rotation="-6" android:background="@drawable/bg_board" android:padding="10dp"
+                    android:columnCount="3" android:rowCount="3" android:elevation="10dp" android:layoutDirection="ltr">
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lime" android:text="@string/preview_one" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lavender" android:text="@string/preview_two" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lavender" android:text="@string/preview_three" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lavender" android:text="@string/preview_four" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lime" android:text="@string/preview_five" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lavender" android:text="@string/preview_six" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_coral" android:text="@string/preview_seven" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_lavender" android:text="@string/preview_eight" />
+                    <TextView style="@style/PreviewTile" android:background="@drawable/bg_empty" />
+                </GridLayout>
+            </FrameLayout>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/home_description" android:textSize="15sp" android:lineSpacingExtra="4dp"
+                android:gravity="center" android:textColor="@color/muted" />
+            <Button android:id="@+id/start_game" style="@style/ActionButton" android:layout_marginTop="24dp" android:text="@string/home_start" />
+            <Button android:id="@+id/new_game" style="@style/SecondaryButton" android:layout_marginTop="12dp"
+                android:text="@string/home_new" android:visibility="gone" />
+            <TextView style="@style/Eyebrow" android:layout_marginTop="20dp" android:text="@string/home_footer"
+                android:gravity="center" android:letterSpacing="0.09" android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
