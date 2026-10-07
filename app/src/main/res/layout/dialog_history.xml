@@ -1,0 +1,25 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="24dp">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/history_title" android:textSize="26sp"
+        android:fontFamily="sans-serif-black" android:textColor="@color/white" />
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" android:text="@string/history_description"
+        android:textSize="14sp" android:textColor="@color/muted" />
+    <TextView android:id="@+id/history_count" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" android:textSize="14sp" android:textColor="@color/accent"
+        android:visibility="gone" android:accessibilityLiveRegion="polite" />
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:layout_marginTop="16dp">
+        <ListView android:id="@+id/history_list" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:divider="@android:color/transparent"
+            android:dividerHeight="10dp" />
+        <TextView android:id="@+id/history_status" android:layout_width="match_parent"
+            android:layout_height="match_parent" android:gravity="center"
+            android:text="@string/history_loading" android:textSize="16sp" android:textColor="@color/muted"
+            android:accessibilityLiveRegion="polite" />
+    </FrameLayout>
+    <Button android:id="@+id/history_close" style="@style/SecondaryButton"
+        android:layout_marginTop="16dp" android:text="@string/history_close" />
+</LinearLayout>

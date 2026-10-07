@@ -64,7 +64,8 @@ estado da partida em andamento.
 - **Vamos jogar:** cria uma partida com tabuleiro solucionável.
 - **Continuar partida:** aparece quando existe uma partida incompleta e a retoma.
 - **Começar outra partida:** permite descartar a partida atual e gerar outra.
-- **Sobre o Slide8:** apresenta o jogo, as regras e as opções em um diálogo com rolagem.
+- **Sobre o Slide8:** identifica Euzébio Oliveira como desenvolvedor e apresenta o jogo, as regras e as opções.
+- **Histórico de partidas:** consulta as vitórias salvas no SQLite, com data, tempo e movimentos.
 - **Tema e som:** controles disponíveis tanto no início quanto durante a partida.
 
 ### Tema e sons
@@ -77,7 +78,7 @@ As duas preferências são salvas com `SharedPreferences` e persistem ao reabrir
 Os efeitos originais em `res/raw/` são WAVs curtos reproduzidos por `SoundPool`,
 com o volume de mídia do aparelho. Ao silenciar ou sair do aplicativo, o efeito
 em execução para; ele não é retomado ao voltar. O áudio é liberado ao destruir a Activity.
-Não há downloads, permissões adicionais ou bibliotecas externas. Para regenerar
+O áudio não exige downloads, permissões ou bibliotecas externas. Para regenerar
 os arquivos usando apenas Java, execute `java tests/GenerateSounds.java` na raiz.
 
 ### Tela de jogo
@@ -98,7 +99,9 @@ peças posicionadas corretamente.
 | Seta de voltar / Voltar do sistema | Retorna à tela inicial e pausa a partida. |
 
 Se a partida já possui movimentos e ainda não terminou, começar outra partida
-abre uma confirmação para evitar a perda acidental do progresso.
+abre um popup personalizado para evitar a perda acidental do progresso. Ele usa
+as cores, bordas e botões do jogo nos dois temas. O cronômetro fica pausado durante
+a confirmação; cancelar ou pressionar Voltar preserva a partida.
 
 ### Vitória
 
@@ -108,6 +111,26 @@ movimentos e o tempo da partida.
 
 O diálogo oferece **Jogar de novo** e **Voltar ao início**. Seu conteúdo tem
 rolagem para se adaptar a telas com pouca altura.
+
+Ao aparecer a vitória, o aparelho recebe dois pulsos curtos de vibração. A resposta
+acontece uma vez por partida, sem se repetir ao girar a tela ou retomar o aplicativo.
+A permissão `android.permission.VIBRATE` está no `AndroidManifest.xml`; não exige
+pedido em tempo de execução. Aparelhos sem vibrador continuam funcionando normalmente.
+Som e vibração são independentes; as configurações do Android podem limitar a vibração.
+
+### Histórico com SQLite
+
+Cada vitória salva sua data de conclusão, quantidade de movimentos e tempo ativo
+no banco privado `slide8_history.db`, usando `SQLiteOpenHelper` nativo. O botão
+**Histórico de partidas** na tela inicial mostra os resultados do mais recente
+ao mais antigo, com rolagem e uma mensagem quando ainda não há registros.
+Partidas em andamento ou descartadas ao embaralhar não entram no histórico.
+
+`GameHistory.java` executa gravações, consultas e fechamento em uma fila fora da
+thread da interface. Cada partida tem um ID único preservado durante recriações,
+evitando duplicação de resultados. Os registros persistem ao fechar o aplicativo;
+limpar os dados do app remove o banco. Não é necessária permissão de armazenamento,
+internet, Room ou outra dependência. O SQL fica nas strings da classe Java.
 
 ## Tecnologias e linguagens
 
@@ -232,12 +255,17 @@ Slide8-game/
 │       ├── AndroidManifest.xml      # Activity inicial, tema e metadados
 │       ├── java/com/example/slide8/
 │       │   ├── MainActivity.java    # Implementação do jogo e preferências
-│       │   └── GameSounds.java      # Efeitos sonoros nativos
+│       │   ├── GameSounds.java      # Efeitos sonoros nativos
+│       │   └── GameHistory.java     # Histórico persistente com SQLite nativo
 │       └── res/
 │           ├── layout/
 │           │   ├── activity_main.xml
 │           │   ├── screen_home.xml
 │           │   ├── screen_game.xml
+│           │   ├── dialog_about.xml
+│           │   ├── dialog_restart.xml
+│           │   ├── dialog_history.xml
+│           │   ├── item_history.xml
 │           │   └── dialog_victory.xml
 │           ├── drawable/            # Fundos, peças, bordas e ripples XML
 │           ├── values/
@@ -516,12 +544,16 @@ continuação, navegação Voltar e preservação de estado durante rotação.
 
 Depois usa uma busca A* com distância de Manhattan para encontrar uma solução e
 executá-la com deslizes reais via ADB. Confere a vitória, a preservação do resultado
-após rotação e a criação de outra partida. Esse solucionador existe apenas no
+após rotação, o popup de reinício, a autoria no Sobre e o histórico após reabrir
+o aplicativo, sem duplicar a vitória durante a rotação. Esse solucionador existe apenas no
 teste; não faz parte do aplicativo.
 
 As capturas `home.png`, `game.png` e `victory.png` são gravadas na pasta indicada
 por `--output`. O script restaura as configurações de rotação ao terminar e aceita
 somente seriais de emulador. Ele não cria, instala ou encerra o emulador.
+
+Para conferir apenas a consulta do histórico nos dois temas, acrescente
+`--history-only`. A sensação física da vibração deve ser conferida em um aparelho.
 
 A compilação, o lint, os testes de lógica e o fluxo funcional descrito acima foram
 executados com sucesso no ambiente de desenvolvimento. Essa validação não
@@ -569,7 +601,7 @@ foi feita para largura ímpar; alterar somente `SIZE` não generaliza o jogo.
 ## Escopo atual
 
 O projeto implementa o modo clássico 3×3 para um jogador. Não possui seleção de
-níveis, ranking, conta, anúncios, dicas automáticas ou histórico permanente.
+níveis, ranking, conta, anúncios ou dicas automáticas. O histórico local guarda as vitórias.
 O embaralhamento garante solução, mas não classifica a dificuldade da partida.
 
 Toda a lógica executada pelo aplicativo continua em **Java**, com **Views e

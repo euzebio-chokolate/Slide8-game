@@ -9,11 +9,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.media.AudioManager;
+import android.media.AudioAttributes;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,12 +26,18 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.GridLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
+import java.util.UUID;
 
 public class MainActivity extends Activity {
     private static final int SIZE = 3;
@@ -36,6 +46,11 @@ public class MainActivity extends Activity {
     private static final String SOUND_ENABLED = "sound_enabled";
     private SharedPreferences preferences;
     private GameSounds sounds;
+    private GameHistory history;
+    private Vibrator vibrator;
+    private String matchId;
+    private long completedAt;
+    private boolean victoryVibrated;
     private boolean darkTheme;
     private boolean soundEnabled;
     private boolean changingTheme;
@@ -60,6 +75,7 @@ public class MainActivity extends Activity {
     private AlertDialog victoryDialog;
     private AlertDialog restartDialog;
     private AlertDialog aboutDialog;
+    private AlertDialog historyDialog;
     private int moves;
     private long elapsedMillis;
     private long resumedAt;
@@ -105,6 +121,8 @@ public class MainActivity extends Activity {
         darkTheme = preferences.getBoolean(DARK_THEME, true);
         soundEnabled = preferences.getBoolean(SOUND_ENABLED, true);
         sounds = new GameSounds(this);
+        history = new GameHistory(this);
+        configureVibrator();
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
         setContentView(R.layout.activity_main);
         configureSettings();
@@ -156,12 +174,17 @@ public class MainActivity extends Activity {
                 victoryPending = savedInstanceState.getBoolean("victoryPending");
                 hasGame = savedInstanceState.getBoolean("hasGame");
                 gameVisible = savedInstanceState.getBoolean("gameVisible");
+                matchId = savedInstanceState.getString("matchId");
+                completedAt = savedInstanceState.getLong("completedAt");
+                victoryVibrated = savedInstanceState.getBoolean("victoryVibrated");
             } else {
                 shuffleBoard(board, random);
             }
         } else {
             shuffleBoard(board, random);
         }
+        if (matchId == null) matchId = UUID.randomUUID().toString();
+        if (won && completedAt > 0) saveVictory();
         configureResponsiveLayout();
         updateBoard();
         updateTimer();
@@ -205,6 +228,7 @@ public class MainActivity extends Activity {
         }
         updateSoundButtons();
         findViewById(R.id.about).setOnClickListener(view -> showAboutDialog());
+        findViewById(R.id.history).setOnClickListener(view -> showHistoryDialog());
     }
 
     private void updateSoundButtons() {
@@ -222,12 +246,98 @@ public class MainActivity extends Activity {
         View content = getLayoutInflater().inflate(R.layout.dialog_about, null);
         aboutDialog = new AlertDialog.Builder(this).setView(content).create();
         content.findViewById(R.id.about_close).setOnClickListener(view -> aboutDialog.dismiss());
-        aboutDialog.show();
-        Window window = aboutDialog.getWindow();
+        showStyledDialog(aboutDialog);
+    }
+
+    private void showStyledDialog(AlertDialog dialog) {
+        dialog.show();
+        Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawableResource(R.drawable.bg_dialog);
             window.setLayout(Math.min(getResources().getDisplayMetrics().widthPixels - dp(40), dp(380)),
                     ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void showHistoryDialog() {
+        if (historyDialog != null && historyDialog.isShowing()) return;
+        View content = getLayoutInflater().inflate(R.layout.dialog_history, null);
+        int height = Math.min(getResources().getDisplayMetrics().heightPixels - dp(96), dp(560));
+        // Dimensiona o conteúdo, não só a janela, para a lista ocupar o espaço disponível.
+        content.setMinimumHeight(height);
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(content).create();
+        historyDialog = dialog;
+        content.findViewById(R.id.history_close).setOnClickListener(view -> dialog.dismiss());
+        showStyledDialog(dialog);
+        TextView status = content.findViewById(R.id.history_status);
+        ListView list = content.findViewById(R.id.history_list);
+        history.load(matches -> {
+            if (isDestroyed() || !dialog.isShowing()) return;
+            if (matches != null) {
+                TextView count = content.findViewById(R.id.history_count);
+                count.setText(getResources().getQuantityString(R.plurals.history_count, matches.size(), matches.size()));
+                count.setVisibility(View.VISIBLE);
+            }
+            if (matches == null || matches.isEmpty()) {
+                status.setText(matches == null ? R.string.history_error : R.string.history_empty);
+                return;
+            }
+            status.setVisibility(View.GONE);
+            DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
+            list.setAdapter(new ArrayAdapter<GameHistory.Match>(this, R.layout.item_history, matches) {
+                @Override
+                public boolean isEnabled(int position) { return false; }
+
+                @Override
+                public boolean areAllItemsEnabled() { return false; }
+
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    View row = convertView != null ? convertView
+                            : getLayoutInflater().inflate(R.layout.item_history, parent, false);
+                    GameHistory.Match match = getItem(position);
+                    ((TextView) row.findViewById(R.id.history_date)).setText(getString(
+                            R.string.history_result, dateFormat.format(new Date(match.completedAt))));
+                    ((TextView) row.findViewById(R.id.history_stats)).setText(getResources()
+                            .getQuantityString(R.plurals.victory_stats, match.moves,
+                                    match.moves, formatTime(match.elapsedMillis)));
+                    return row;
+                }
+            });
+        });
+    }
+
+    private void saveVictory() {
+        history.save(new GameHistory.Match(matchId, completedAt, moves, elapsedMillis), saved -> {
+            if (!saved && !isDestroyed() && resumed) {
+                Toast.makeText(this, R.string.history_save_error, Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    @SuppressWarnings("deprecation")
+    private void configureVibrator() {
+        if (Build.VERSION.SDK_INT >= 31) {
+            VibratorManager manager = getSystemService(VibratorManager.class);
+            vibrator = manager == null ? null : manager.getDefaultVibrator();
+        } else {
+            vibrator = getSystemService(Vibrator.class);
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void vibrateVictory() {
+        if (victoryVibrated) return;
+        victoryVibrated = true;
+        if (vibrator == null || !vibrator.hasVibrator()) return;
+        long[] pattern = {0, 80, 60, 140};
+        AudioAttributes attributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build();
+        if (Build.VERSION.SDK_INT >= 26) {
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1), attributes);
+        } else {
+            vibrator.vibrate(pattern, -1, attributes);
         }
     }
 
@@ -524,6 +634,8 @@ public class MainActivity extends Activity {
         victoryPending = won;
         if (won) {
             pauseTimer();
+            completedAt = System.currentTimeMillis();
+            saveVictory();
         }
         moving = true;
         int version = animationVersion;
@@ -610,13 +722,17 @@ public class MainActivity extends Activity {
         if (restartDialog != null && restartDialog.isShowing()) {
             return;
         }
-        restartDialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.restart_title)
-                .setMessage(R.string.restart_message)
-                .setPositiveButton(R.string.restart_confirm, (dialog, which) -> newGame())
-                .setNegativeButton(R.string.cancel, null)
-                .create();
-        restartDialog.show();
+        pauseTimer();
+        settleVisuals();
+        View content = getLayoutInflater().inflate(R.layout.dialog_restart, null);
+        restartDialog = new AlertDialog.Builder(this).setView(content).create();
+        restartDialog.setOnDismissListener(dialog -> startTimer());
+        content.findViewById(R.id.restart_confirm).setOnClickListener(view -> {
+            restartDialog.dismiss();
+            newGame();
+        });
+        content.findViewById(R.id.restart_cancel).setOnClickListener(view -> restartDialog.dismiss());
+        showStyledDialog(restartDialog);
     }
 
     private void newGame() {
@@ -626,6 +742,9 @@ public class MainActivity extends Activity {
         moves = 0;
         elapsedMillis = 0;
         won = false;
+        matchId = UUID.randomUUID().toString();
+        completedAt = 0;
+        victoryVibrated = false;
         victoryPending = false;
         hasGame = true;
         updateBoard();
@@ -639,7 +758,11 @@ public class MainActivity extends Activity {
     }
 
     private String formattedTime() {
-        long seconds = currentElapsedMillis() / 1000;
+        return formatTime(currentElapsedMillis());
+    }
+
+    private static String formatTime(long elapsed) {
+        long seconds = elapsed / 1000;
         return String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60);
     }
 
@@ -685,13 +808,8 @@ public class MainActivity extends Activity {
             victoryPending = false;
             showScreen(false, true);
         });
-        victoryDialog.show();
-        Window window = victoryDialog.getWindow();
-        if (window != null) {
-            window.setBackgroundDrawableResource(R.drawable.bg_dialog);
-            window.setLayout(Math.min(getResources().getDisplayMetrics().widthPixels - dp(40), dp(380)),
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
+        showStyledDialog(victoryDialog);
+        vibrateVictory();
         View emblem = content.findViewById(R.id.victory_emblem);
         emblem.setScaleX(0.6f);
         emblem.setScaleY(0.6f);
@@ -732,6 +850,7 @@ public class MainActivity extends Activity {
     protected void onPause() {
         resumed = false;
         sounds.pause();
+        if (vibrator != null) vibrator.cancel();
         pauseTimer();
         stopPreviewAnimation();
         settleVisuals();
@@ -744,6 +863,7 @@ public class MainActivity extends Activity {
         if (aboutDialog != null) {
             aboutDialog.dismiss();
         }
+        if (historyDialog != null) historyDialog.dismiss();
         super.onPause();
     }
 
@@ -756,6 +876,9 @@ public class MainActivity extends Activity {
         outState.putBoolean("victoryPending", victoryPending);
         outState.putBoolean("hasGame", hasGame);
         outState.putBoolean("gameVisible", gameVisible);
+        outState.putString("matchId", matchId);
+        outState.putLong("completedAt", completedAt);
+        outState.putBoolean("victoryVibrated", victoryVibrated);
         super.onSaveInstanceState(outState);
     }
 
@@ -764,6 +887,7 @@ public class MainActivity extends Activity {
         handler.removeCallbacksAndMessages(null);
         stopPreviewAnimation();
         sounds.release();
+        history.close();
         super.onDestroy();
     }
 }

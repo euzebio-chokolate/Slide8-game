@@ -16,6 +16,21 @@
     <string name="about_preferences_title">Do seu jeito</string>
     <string name="about_preferences">Alterne entre tema claro e escuro e ligue ou desligue os sons pelos botões na tela inicial ou no jogo. Suas preferências ficam salvas. O volume acompanha o volume de mídia do aparelho.</string>
     <string name="about_close">Entendi</string>
+    <string name="about_developer_title">Desenvolvido por</string>
+    <string name="about_developer">Euzébio Oliveira</string>
+    <string name="history_title">Histórico de partidas</string>
+    <string name="history_description">Suas partidas concluídas, da mais recente à mais antiga.</string>
+    <string name="history_loading">Carregando partidas…</string>
+    <string name="history_empty">Seu histórico começa com a primeira vitória. Vamos jogar?</string>
+    <string name="history_error">Não foi possível carregar o histórico. Feche e tente novamente.</string>
+    <string name="history_save_error">Não foi possível salvar esta partida no histórico.</string>
+    <string name="history_close">Fechar histórico</string>
+    <string name="history_result">Vitória · %1$s</string>
+    <plurals name="history_count">
+        <item quantity="one">%1$d partida concluída</item>
+        <item quantity="other">%1$d partidas concluídas</item>
+    </plurals>
+    <string name="restart_symbol">↻</string>
     <string name="brand">SLIDE</string>
     <string name="brand_eight">8</string>
     <string name="home_badge">SEU PRÓXIMO DESAFIO</string>
@@ -54,7 +69,7 @@
     <string name="play_again">Jogar de novo   →</string>
     <string name="return_home">Voltar ao início</string>
     <string name="restart_title">Uma nova combinação?</string>
-    <string name="restart_message">O tabuleiro será embaralhado e os contadores voltarão a zero.</string>
+    <string name="restart_message">O tabuleiro será embaralhado e os contadores voltarão a zero. Esta partida não será salva no histórico.</string>
     <string name="restart_confirm">Nova partida</string>
     <string name="cancel">Continuar jogando</string>
     <string name="victory_star">✦</string>

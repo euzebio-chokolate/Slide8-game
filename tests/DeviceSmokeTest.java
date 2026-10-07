@@ -34,11 +34,13 @@ public final class DeviceSmokeTest {
         String adbPath = null;
         String serial = "emulator-5554";
         String outputDir = "/tmp/slide8-preview";
+        boolean historyOnly = false;
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "--adb": adbPath = args[++i]; break;
                 case "--serial": serial = args[++i]; break;
                 case "--output": outputDir = args[++i]; break;
+                case "--history-only": historyOnly = true; break;
                 default: usage("Argumento desconhecido: " + args[i]);
             }
         }
@@ -55,7 +57,8 @@ public final class DeviceSmokeTest {
         String rotation = text("shell", "settings", "get", "system", "user_rotation");
         String autoRotation = text("shell", "settings", "get", "system", "accelerometer_rotation");
         try {
-            run();
+            if (historyOnly) testHistoryThemes();
+            else run();
         } finally {
             restore("user_rotation", rotation);
             restore("accelerometer_rotation", autoRotation);
@@ -71,6 +74,7 @@ public final class DeviceSmokeTest {
                 "Abertura deve mostrar a tela inicial");
         screenshot("home");
         testPreferences();
+        int initialHistoryCount = historyCount(null);
         nodes = ui();
         tap(nodes.get("start_game"));
         nodes = ui();
@@ -112,6 +116,9 @@ public final class DeviceSmokeTest {
         scrollToTop();
         nodes = ui();
         System.out.println("OK: tela inicial, toque sem movimento e arrastes inválidos/válido.");
+
+        testRestart();
+        nodes = ui();
 
         List<Integer> state = board(nodes);
         tap(nodes.get("pause_game"));
@@ -156,11 +163,85 @@ public final class DeviceSmokeTest {
         check(nodes.get("victory_stats").get("text").equals(victoryStats),
                 "Vitória e tempo parado devem sobreviver à rotação");
         screenshot("victory");
-        tap(nodes.get("victory_again"));
+        tap(nodes.get("victory_home"));
+        check(historyCount(victoryStats) == initialHistoryCount + 1,
+                "Vitória deve ser registrada uma vez, mesmo após rotação");
+        adb("shell", "am", "force-stop", "com.example.slide8");
+        adb("shell", "am", "start", "-n", "com.example.slide8/.MainActivity");
+        sleep(700);
+        check(historyCount(victoryStats) == initialHistoryCount + 1,
+                "Histórico deve persistir ao encerrar e reabrir o aplicativo");
+        tap(scrollTo("start_game"));
         nodes = ui();
         check(nodes.get("moves").get("text").equals("0") && !board(nodes).equals(TARGET),
                 "Jogar de novo deve iniciar uma nova partida");
-        System.out.println("OK: solução por gestos, diálogo de vitória e nova partida. Capturas em " + output);
+        System.out.println("OK: vitória, histórico SQLite persistente sem duplicação e nova partida. Capturas em " + output);
+    }
+
+    private static void testHistoryThemes() throws Exception {
+        adb("shell", "am", "force-stop", "com.example.slide8");
+        adb("shell", "am", "start", "-n", "com.example.slide8/.MainActivity");
+        sleep(700);
+        int count = historyCount(null);
+        Files.copy(output.resolve("history-before.png"), output.resolve("history-original-theme.png"),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        tap(scrollTo("home_theme"));
+        try {
+            check(historyCount(null) == count, "Troca de tema deve preservar o histórico");
+            Files.copy(output.resolve("history-before.png"), output.resolve("history-alternate-theme.png"),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            tap(scrollTo("home_theme"));
+        }
+        System.out.println("OK: histórico persistente nos dois temas. Capturas em " + output);
+    }
+
+    private static int historyCount(String expectedStats) throws Exception {
+        tap(scrollTo("history"));
+        Map<String, Map<String, String>> nodes = ui();
+        check(nodes.containsKey("history_count"), "Histórico deve carregar a contagem de partidas");
+        int count = Integer.parseInt(nodes.get("history_count").get("text").split(" ")[0]);
+        if (count == 0) {
+            check(nodes.get("history_status").get("text").contains("primeira vitória"),
+                    "Histórico vazio deve orientar o jogador");
+        }
+        if (expectedStats != null) {
+            check(nodes.get("history_stats").get("text").equals(expectedStats),
+                    "Registro mais recente deve ter os movimentos e o tempo da vitória");
+        }
+        screenshot(expectedStats == null ? "history-before" : "history-saved");
+        tap(nodes.get("history_close"));
+        scrollToTop();
+        return count;
+    }
+
+    private static void testRestart() throws Exception {
+        Map<String, Map<String, String>> nodes = ui();
+        List<Integer> before = board(nodes);
+        tap(scrollTo("restart"));
+        nodes = ui();
+        check(nodes.containsKey("restart_title") && nodes.containsKey("restart_confirm")
+                        && nodes.containsKey("restart_cancel"), "Confirmação deve usar o popup personalizado");
+        screenshot("restart");
+        tap(nodes.get("restart_cancel"));
+        scrollToTop();
+        nodes = ui();
+        check(board(nodes).equals(before) && nodes.get("moves").get("text").equals("1"),
+                "Cancelar deve preservar a partida");
+        tap(scrollTo("restart"));
+        adb("shell", "input", "keyevent", "KEYCODE_BACK");
+        scrollToTop();
+        check(board(ui()).equals(before), "Voltar deve cancelar a confirmação");
+        tap(scrollTo("restart"));
+        tap(scrollTo("restart_confirm"));
+        scrollToTop();
+        nodes = ui();
+        check(nodes.get("moves").get("text").equals("0") && !board(nodes).equals(TARGET),
+                "Confirmar deve criar outra partida e zerar movimentos");
+        List<Integer> state = board(nodes);
+        int move = neighbors(state).get(0);
+        swipe(center(nodes.get("tile" + move)), toDouble(center(nodes.get("tile" + state.indexOf(0)))));
+        System.out.println("OK: popup personalizado, cancelar, voltar e confirmar nova combinação.");
     }
 
     private static void testPreferences() throws Exception {
@@ -174,10 +255,10 @@ public final class DeviceSmokeTest {
         String changedSound = scrollTo("home_sound").get("text");
         check(!changedSound.equals(originalSound), "Botão deve alternar o som");
         tap(scrollTo("about"));
-        Map<String, Map<String, String>> nodes = ui();
-        check(nodes.containsKey("about_close"), "Sobre deve abrir com botão para fechar");
+        check(scrollTo("about_developer").get("text").equals("Euzébio Oliveira"),
+                "Sobre deve identificar o desenvolvedor");
         screenshot("about");
-        tap(nodes.get("about_close"));
+        tap(scrollTo("about_close"));
         adb("shell", "am", "force-stop", "com.example.slide8");
         adb("shell", "am", "start", "-n", "com.example.slide8/.MainActivity");
         sleep(700);
@@ -209,6 +290,8 @@ public final class DeviceSmokeTest {
     private static void scrollScreen(boolean down) throws Exception {
         Map<String, Map<String, String>> nodes = ui();
         Map<String, String> screen = nodes.get(nodes.containsKey("home_screen") ? "home_screen" : "game_screen");
+        if (nodes.containsKey("about_scroll")) screen = nodes.get("about_scroll");
+        if (nodes.containsKey("restart_scroll")) screen = nodes.get("restart_scroll");
         Matcher matcher = NUMBER.matcher(screen.get("bounds"));
         int[] bounds = new int[4];
         for (int i = 0; i < 4 && matcher.find(); i++) bounds[i] = Integer.parseInt(matcher.group());
@@ -241,8 +324,19 @@ public final class DeviceSmokeTest {
     }
 
     private static Map<String, Map<String, String>> ui() throws Exception {
-        String result = text("shell", "uiautomator", "dump", "/sdcard/slide8-window.xml");
-        check(result.contains("dumped to"), "A captura da hierarquia falhou; não reutilizar arquivo antigo");
+        // A ferramenta do emulador pode ser encerrada ou não ter uma janela durante transições.
+        // Só lê o XML quando uma nova captura foi confirmada, nunca um arquivo antigo.
+        boolean captured = false;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                captured = text("shell", "uiautomator", "dump", "/sdcard/slide8-window.xml").contains("dumped to");
+            } catch (IOException error) {
+                if (attempt == 2) throw error;
+            }
+            if (captured) break;
+            sleep(700);
+        }
+        check(captured, "A captura da hierarquia falhou; não reutilizar arquivo antigo");
         byte[] xml = adb("exec-out", "cat", "/sdcard/slide8-window.xml");
         NodeList list = DocumentBuilderFactory.newInstance().newDocumentBuilder()
                 .parse(new ByteArrayInputStream(xml)).getElementsByTagName("node");
@@ -257,7 +351,7 @@ public final class DeviceSmokeTest {
             for (int j = 0; j < node.getAttributes().getLength(); j++) {
                 attributes.put(node.getAttributes().item(j).getNodeName(), node.getAttributes().item(j).getNodeValue());
             }
-            nodes.put(id.substring(id.lastIndexOf(":id/") + 4), attributes);
+            nodes.putIfAbsent(id.substring(id.lastIndexOf(":id/") + 4), attributes);
         }
         return nodes;
     }
@@ -394,7 +488,7 @@ public final class DeviceSmokeTest {
 
     private static void usage(String message) {
         System.err.println(message);
-        System.err.println("Uso: java tests/DeviceSmokeTest.java --adb CAMINHO [--serial emulator-5554] [--output DIR]");
+        System.err.println("Uso: java tests/DeviceSmokeTest.java --adb CAMINHO [--serial emulator-5554] [--output DIR] [--history-only]");
         System.exit(2);
     }
 }
