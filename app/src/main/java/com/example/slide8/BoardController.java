@@ -19,8 +19,11 @@ import static com.example.slide8.UiEffects.duration;
 /** Renderização, gestos e animações do tabuleiro. Não decide navegação ou persistência. */
 final class BoardController {
     interface Listener {
+        /** Confirma a jogada no estado da partida. */
         boolean onMove(int position);
+        /** Notifica a Activity quando a animação de vitória termina. */
         void onVictoryReady();
+        /** Notifica a Activity quando muda o tamanho do tabuleiro. */
         void onBoardResized();
     }
 
@@ -41,6 +44,7 @@ final class BoardController {
     private int animationVersion;
 
     // Button já implementa performClick; toque e ações assistivas seguem caminhos distintos.
+    /** Conecta as peças e prepara os gestos e as animações do tabuleiro. */
     @SuppressLint("ClickableViewAccessibility")
     BoardController(Activity activity, PuzzleGame game, Listener listener) {
         this.activity = activity;
@@ -76,12 +80,15 @@ final class BoardController {
         });
     }
 
+    /** Ativa ou desativa a interação com as peças. */
     void setInteractive(boolean interactive) {
         this.interactive = interactive;
     }
 
+    /** Converte dp em pixels para dimensionar o tabuleiro. */
     private int dp(int value) { return UiEffects.dp(activity, value); }
 
+    /** Cancela as animações pendentes e redesenha as peças. */
     void settle() {
         animationVersion++;
         draggedTile = -1;
@@ -98,6 +105,7 @@ final class BoardController {
         render();
     }
 
+    /** Atualiza números, cores, descrições e progresso das peças. */
     void render() {
         int correct = 0;
         for (int i = 0; i < PuzzleGame.CELL_COUNT; i++) {
@@ -138,10 +146,12 @@ final class BoardController {
         private boolean active;
         private boolean adjacent;
 
+        /** Cria o detector de gestos para uma peça do tabuleiro. */
         TileTouchListener(int position) {
             this.position = position;
         }
 
+        /** Acompanha o arraste e confirma uma jogada válida. */
         @Override
         public boolean onTouch(View view, MotionEvent event) {
             if (!interactive || game.isWon() || moving) {
@@ -215,6 +225,7 @@ final class BoardController {
         }
     }
 
+    /** Devolve à posição inicial uma peça cujo gesto foi rejeitado. */
     private void returnTile(View tile) {
         moving = true;
         int version = animationVersion;
@@ -227,6 +238,7 @@ final class BoardController {
                 }).start();
     }
 
+    /** Confirma a jogada e anima a peça até o espaço vazio. */
     private void animateMove(int position) {
         if (!interactive || game.isWon() || moving) {
             return;
@@ -261,6 +273,7 @@ final class BoardController {
                 }).start();
     }
 
+    /** Apresenta o pulso visual e informa a Activity sobre a vitória. */
     private void celebrate() {
         hintView.setText(R.string.victory_title);
         grid.animate().scaleX(1.025f).scaleY(1.025f).setDuration(duration(160))

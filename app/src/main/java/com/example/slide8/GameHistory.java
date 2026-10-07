@@ -21,6 +21,7 @@ final class GameHistory {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
 
+    /** Cria o acesso assíncrono ao histórico privado do aplicativo. */
     GameHistory(Context context) {
         database = new Database(context.getApplicationContext());
     }
@@ -31,6 +32,7 @@ final class GameHistory {
         final int moves;
         final long elapsedMillis;
 
+        /** Guarda os dados de uma partida concluída. */
         Match(String id, long completedAt, int moves, long elapsedMillis) {
             this.id = id;
             this.completedAt = completedAt;
@@ -39,6 +41,7 @@ final class GameHistory {
         }
     }
 
+    /** Insere uma vitória na fila de escrita e retorna o resultado na thread principal. */
     void save(Match match, Consumer<Boolean> callback) {
         worker.execute(() -> {
             boolean saved;
@@ -58,6 +61,7 @@ final class GameHistory {
     }
 
     // null sinaliza falha; lista vazia representa um histórico sem vitórias.
+    /** Lê as vitórias em ordem da mais recente para a mais antiga. */
     void load(Consumer<List<Match>> callback) {
         worker.execute(() -> {
             List<Match> matches = new ArrayList<>();
@@ -77,6 +81,7 @@ final class GameHistory {
         });
     }
 
+    /** Fecha o banco depois das tarefas já enfileiradas. */
     void close() {
         // Não interrompe uma gravação quando a Activity é recriada ou encerrada.
         worker.execute(database::close);
@@ -84,10 +89,12 @@ final class GameHistory {
     }
 
     private static final class Database extends SQLiteOpenHelper {
+        /** Inicializa o banco e sua tabela de partidas. */
         Database(Context context) {
             super(context, "slide8_history.db", null, 1);
         }
 
+        /** Cria a tabela para registrar as partidas concluídas. */
         @Override
         public void onCreate(SQLiteDatabase db) {
             db.execSQL("CREATE TABLE matches (id TEXT PRIMARY KEY NOT NULL, "
@@ -95,6 +102,7 @@ final class GameHistory {
                     + "elapsed_millis INTEGER NOT NULL CHECK (elapsed_millis >= 0))");
         }
 
+        /** Preserva o histórico se a versão do esquema precisar ser atualizada. */
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
             // Novas versões deverão migrar os registros, nunca apagar o histórico.

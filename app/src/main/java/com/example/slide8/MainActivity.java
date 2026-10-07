@@ -46,6 +46,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
     private boolean resumed;
 
     private final Runnable timerTick = new Runnable() {
+        /** Atualiza o mostrador e agenda a próxima atualização enquanto o tempo corre. */
         @Override
         public void run() {
             if (timer.isRunning()) {
@@ -56,6 +57,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
     };
     private final Runnable victoryReveal = this::showVictoryDialog;
 
+    /** Aplica o tema salvo antes da criação das Views da Activity. */
     @Override
     protected void attachBaseContext(Context base) {
         Configuration override = new Configuration();
@@ -66,6 +68,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         applyOverrideConfiguration(override);
     }
 
+    /** Cria os componentes e restaura o estado da partida. */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,6 +104,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         }
     }
 
+    /** Liga os controles de navegação e os diálogos às suas ações. */
     private void bindNavigation() {
         startButton.setOnClickListener(view -> {
             if (game.hasGame() && !game.isWon()) showScreen(true, true);
@@ -114,6 +118,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         findViewById(R.id.history).setOnClickListener(view -> dialogs.showHistory());
     }
 
+    /** Restaura o tabuleiro, os contadores e a tela do estado salvo. */
     private void restoreState(Bundle state) {
         if (state == null || !game.restore(state.getIntArray("board"), state.getInt("moves"),
                 state.getBoolean("hasGame"), state.getString("matchId"), state.getLong("completedAt"))) return;
@@ -123,8 +128,10 @@ public class MainActivity extends Activity implements BoardController.Listener {
         gameVisible = state.getBoolean("gameVisible");
     }
 
+    /** Converte uma medida em dp para pixels. */
     private int dp(int value) { return UiEffects.dp(this, value); }
 
+    /** Ajusta a largura dos conteúdos das telas à área disponível. */
     private void configureResponsiveLayout() {
         findViewById(R.id.main).addOnLayoutChangeListener((view, l, t, r, b, ol, ot, or, ob) -> {
             int width = Math.min(r - l - view.getPaddingLeft() - view.getPaddingRight() - dp(48), dp(420));
@@ -140,6 +147,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         });
     }
 
+    /** Alterna entre início e jogo e atualiza o cronômetro. */
     private void showScreen(boolean showGame, boolean animate) {
         pauseTimer();
         stopPreviewAnimation();
@@ -165,6 +173,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         }
     }
 
+    /** Executa uma breve animação na miniatura da tela inicial. */
     private void startPreviewAnimation() {
         if (!animationsEnabled() || previewAnimator != null) return;
         previewAnimator = ObjectAnimator.ofFloat(findViewById(R.id.home_preview), View.ROTATION, -6f, -2f);
@@ -174,6 +183,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         previewAnimator.start();
     }
 
+    /** Cancela a animação da miniatura. */
     private void stopPreviewAnimation() {
         if (previewAnimator != null) {
             previewAnimator.cancel();
@@ -181,6 +191,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         }
     }
 
+    /** Cancela animações pendentes e sincroniza a interface com a partida. */
     private void settleVisuals() {
         handler.removeCallbacks(victoryReveal);
         for (View view : new View[]{homeContent, gameContent}) {
@@ -193,6 +204,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         board.settle();
     }
 
+    /** Confirma uma jogada válida e aplica seus efeitos. */
     @Override
     public boolean onMove(int position) {
         if (!resumed || !gameVisible || dialogs.isRestartShowing()
@@ -206,16 +218,19 @@ public class MainActivity extends Activity implements BoardController.Listener {
         return true;
     }
 
+    /** Agenda a abertura do diálogo após a animação de vitória. */
     @Override
     public void onVictoryReady() {
         handler.postDelayed(victoryReveal, duration(400));
     }
 
+    /** Sincroniza a interface quando o tamanho do tabuleiro muda. */
     @Override
     public void onBoardResized() {
         settleVisuals();
     }
 
+    /** Persiste o resultado da partida concluída. */
     private void saveVictory() {
         history.save(new GameHistory.Match(game.matchId(), game.completedAt(), game.moves(),
                 timer.elapsedMillis()), saved -> {
@@ -225,6 +240,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         });
     }
 
+    /** Inicia outra partida ou pede confirmação se há progresso. */
     private void requestNewGame() {
         if (!game.hasGame() || game.isWon() || game.moves() == 0) {
             newGame();
@@ -236,6 +252,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         dialogs.showRestart(this::newGame, this::startTimer);
     }
 
+    /** Reinicia o tabuleiro, o cronômetro e o estado da partida. */
     private void newGame() {
         pauseTimer();
         settleVisuals();
@@ -248,10 +265,12 @@ public class MainActivity extends Activity implements BoardController.Listener {
         sounds.play(GameSounds.SHUFFLE);
     }
 
+    /** Atualiza o texto do cronômetro a partir do tempo acumulado. */
     private void updateTimer() {
         timerView.setText(GameTimer.format(timer.elapsedMillis()));
     }
 
+    /** Inicia o cronômetro quando a partida está visível e ativa. */
     private void startTimer() {
         if (resumed && gameVisible && game.hasGame() && !game.isWon()
                 && !dialogs.isRestartShowing() && !timer.isRunning()) {
@@ -260,12 +279,14 @@ public class MainActivity extends Activity implements BoardController.Listener {
         }
     }
 
+    /** Pausa o cronômetro e cancela suas atualizações agendadas. */
     private void pauseTimer() {
         timer.pause();
         handler.removeCallbacks(timerTick);
         updateTimer();
     }
 
+    /** Apresenta a vitória e dispara uma única resposta tátil. */
     private void showVictoryDialog() {
         if (!resumed || !gameVisible || !victoryPending) return;
         boolean shown = dialogs.showVictory(game.moves(), GameTimer.format(timer.elapsedMillis()),
@@ -279,11 +300,13 @@ public class MainActivity extends Activity implements BoardController.Listener {
         }
     }
 
+    /** Retorna à tela inicial ou encerra a Activity. */
     private void handleBack() {
         if (gameVisible) showScreen(false, true);
         else finish();
     }
 
+    /** Encaminha o botão Voltar do sistema ao fluxo de navegação. */
     @SuppressWarnings("deprecation")
     @SuppressLint("GestureBackNavigation")
     @Override
@@ -291,6 +314,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         handleBack();
     }
 
+    /** Retoma áudio, interação e cronômetro ao voltar à Activity. */
     @Override
     protected void onResume() {
         super.onResume();
@@ -302,6 +326,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         else if (!gameVisible) startPreviewAnimation();
     }
 
+    /** Pausa serviços e fecha diálogos quando a Activity perde o foco. */
     @Override
     protected void onPause() {
         resumed = false;
@@ -315,6 +340,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         super.onPause();
     }
 
+    /** Salva a partida e o estado da tela antes de uma recriação. */
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putIntArray("board", game.snapshot());
@@ -330,6 +356,7 @@ public class MainActivity extends Activity implements BoardController.Listener {
         super.onSaveInstanceState(outState);
     }
 
+    /** Libera tarefas e recursos de áudio ao encerrar a Activity. */
     @Override
     protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);

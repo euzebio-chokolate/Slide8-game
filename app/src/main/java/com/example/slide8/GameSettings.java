@@ -19,6 +19,7 @@ final class GameSettings {
     private boolean soundEnabled;
     private boolean changingTheme;
 
+    /** Lê as preferências e conecta os controles de tema e som das telas. */
     GameSettings(Activity activity, GameSounds sounds, Runnable onThemeChanged) {
         this.activity = activity;
         this.sounds = sounds;
@@ -28,10 +29,12 @@ final class GameSettings {
         bind(onThemeChanged);
     }
 
+    /** Devolve o tema salvo para configurar a Activity antes da criação das Views. */
     static boolean isDarkTheme(Context context) {
         return context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE).getBoolean(DARK_THEME, true);
     }
 
+    /** Liga os controles de preferências às ações do sistema. */
     @SuppressWarnings("deprecation")
     private void bind(Runnable onThemeChanged) {
         if (Build.VERSION.SDK_INT >= 26) {
@@ -63,6 +66,7 @@ final class GameSettings {
         updateSoundButtons();
     }
 
+    /** Atualiza os botões e o estado do áudio após a troca de preferência. */
     private void updateSoundButtons() {
         sounds.setEnabled(soundEnabled);
         for (int id : new int[]{R.id.home_sound, R.id.game_sound}) {

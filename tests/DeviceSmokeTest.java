@@ -30,6 +30,7 @@ public final class DeviceSmokeTest {
     private static List<String> base;
     private static Path output;
 
+    /** Lê os argumentos, inicializa o ADB e restaura a rotação ao final do teste. */
     public static void main(String[] args) throws Exception {
         String adbPath = null;
         String serial = "emulator-5554";
@@ -65,6 +66,7 @@ public final class DeviceSmokeTest {
         }
     }
 
+    /** Executa os principais fluxos do aplicativo no emulador. */
     private static void run() throws Exception {
         adb("shell", "am", "force-stop", "com.example.slide8");
         adb("shell", "am", "start", "-n", "com.example.slide8/.MainActivity");
@@ -178,6 +180,7 @@ public final class DeviceSmokeTest {
         System.out.println("OK: vitória, histórico SQLite persistente sem duplicação e nova partida. Capturas em " + output);
     }
 
+    /** Confere o histórico em ambos os temas e restaura a preferência original. */
     private static void testHistoryThemes() throws Exception {
         adb("shell", "am", "force-stop", "com.example.slide8");
         adb("shell", "am", "start", "-n", "com.example.slide8/.MainActivity");
@@ -196,6 +199,7 @@ public final class DeviceSmokeTest {
         System.out.println("OK: histórico persistente nos dois temas. Capturas em " + output);
     }
 
+    /** Lê no histórico a quantidade de vitórias e confere o resultado mais recente. */
     private static int historyCount(String expectedStats) throws Exception {
         tap(scrollTo("history"));
         Map<String, Map<String, String>> nodes = ui();
@@ -215,6 +219,7 @@ public final class DeviceSmokeTest {
         return count;
     }
 
+    /** Confere a confirmação personalizada e seus caminhos de cancelar e confirmar. */
     private static void testRestart() throws Exception {
         Map<String, Map<String, String>> nodes = ui();
         List<Integer> before = board(nodes);
@@ -244,6 +249,7 @@ public final class DeviceSmokeTest {
         System.out.println("OK: popup personalizado, cancelar, voltar e confirmar nova combinação.");
     }
 
+    /** Confere os controles de tema, som e informações do desenvolvedor. */
     private static void testPreferences() throws Exception {
         String originalTheme = scrollTo("home_theme").get("text");
         String originalSound = scrollTo("home_sound").get("text");
@@ -272,6 +278,7 @@ public final class DeviceSmokeTest {
         System.out.println("OK: Sobre, temas, som e preferências persistentes.");
     }
 
+    /** Rola a tela até encontrar o controle solicitado. */
     private static Map<String, String> scrollTo(String id) throws Exception {
         for (int attempt = 0; attempt < 6; attempt++) {
             Map<String, Map<String, String>> nodes = ui();
@@ -282,11 +289,13 @@ public final class DeviceSmokeTest {
         throw new AssertionError("Controle não encontrado: " + id);
     }
 
+    /** Retorna a tela ao início. */
     private static void scrollToTop() throws Exception {
         scrollScreen(false);
         scrollScreen(false);
     }
 
+    /** Desliza a tela inicial ou de jogo para cima ou para baixo. */
     private static void scrollScreen(boolean down) throws Exception {
         Map<String, Map<String, String>> nodes = ui();
         Map<String, String> screen = nodes.get(nodes.containsKey("home_screen") ? "home_screen" : "game_screen");
@@ -301,6 +310,7 @@ public final class DeviceSmokeTest {
         swipe(new int[]{x, down ? bottom : top}, new double[]{x, down ? top : bottom});
     }
 
+    /** Executa um comando ADB e devolve seus bytes de saída. */
     private static byte[] adb(String... command) throws IOException, InterruptedException {
         List<String> full = new ArrayList<>(base);
         full.addAll(Arrays.asList(command));
@@ -319,10 +329,12 @@ public final class DeviceSmokeTest {
         return result.toByteArray();
     }
 
+    /** Executa um comando ADB e devolve sua saída como texto. */
     private static String text(String... command) throws IOException, InterruptedException {
         return new String(adb(command), StandardCharsets.UTF_8).trim();
     }
 
+    /** Obtém a hierarquia atual da interface para identificar controles e estado. */
     private static Map<String, Map<String, String>> ui() throws Exception {
         // A ferramenta do emulador pode ser encerrada ou não ter uma janela durante transições.
         // Só lê o XML quando uma nova captura foi confirmada, nunca um arquivo antigo.
@@ -356,6 +368,7 @@ public final class DeviceSmokeTest {
         return nodes;
     }
 
+    /** Calcula o centro das coordenadas de um elemento da interface. */
     private static int[] center(Map<String, String> node) {
         Matcher m = NUMBER.matcher(node.get("bounds"));
         int[] b = new int[4];
@@ -365,22 +378,26 @@ public final class DeviceSmokeTest {
         return new int[]{(b[0] + b[2]) / 2, (b[1] + b[3]) / 2};
     }
 
+    /** Converte as coordenadas de um ponto para números decimais. */
     private static double[] toDouble(int[] point) {
         return new double[]{point[0], point[1]};
     }
 
+    /** Toca o centro de um controle e aguarda sua resposta. */
     private static void tap(Map<String, String> node) throws Exception {
         int[] c = center(node);
         adb("shell", "input", "tap", String.valueOf(c[0]), String.valueOf(c[1]));
         sleep(400);
     }
 
+    /** Desliza o dedo entre dois pontos do emulador. */
     private static void swipe(int[] start, double[] end) throws Exception {
         adb("shell", "input", "swipe", String.valueOf(start[0]), String.valueOf(start[1]),
                 String.valueOf((int) end[0]), String.valueOf((int) end[1]), "260");
         sleep(300);
     }
 
+    /** Gira o emulador para paisagem e o restaura para retrato. */
     private static void rotate() throws Exception {
         adb("shell", "settings", "put", "system", "user_rotation", "1");
         sleep(1000);
@@ -388,6 +405,7 @@ public final class DeviceSmokeTest {
         sleep(1000);
     }
 
+    /** Lê as nove peças visíveis e as converte para a lista do teste. */
     private static List<Integer> board(Map<String, Map<String, String>> nodes) {
         List<Integer> state = new ArrayList<>();
         for (int i = 0; i < 9; i++) {
@@ -397,10 +415,12 @@ public final class DeviceSmokeTest {
         return state;
     }
 
+    /** Salva uma captura da tela atual na pasta do teste. */
     private static void screenshot(String name) throws Exception {
         Files.write(output.resolve(name + ".png"), adb("exec-out", "screencap", "-p"));
     }
 
+    /** Enumera as posições imediatamente vizinhas ao espaço vazio. */
     private static List<Integer> neighbors(List<Integer> state) {
         int empty = state.indexOf(0);
         List<Integer> result = new ArrayList<>();
@@ -412,6 +432,7 @@ public final class DeviceSmokeTest {
         return result;
     }
 
+    /** Calcula a distância de Manhattan das peças até suas posições finais. */
     private static int distance(List<Integer> state) {
         int sum = 0;
         for (int i = 0; i < 9; i++) {
@@ -424,6 +445,7 @@ public final class DeviceSmokeTest {
     }
 
     /** Busca A* pela menor sequência de posições clicadas até o objetivo. */
+    /** Usa A* para encontrar uma sequência de movimentos até a vitória. */
     private static List<Integer> solve(List<Integer> initial) {
         final class Entry {
             final int priority;
@@ -431,6 +453,7 @@ public final class DeviceSmokeTest {
             final List<Integer> state;
             final List<Integer> path;
 
+            /** Guarda o custo e o caminho de um estado visitado pela busca. */
             Entry(int cost, List<Integer> state, List<Integer> path) {
                 this.priority = cost + distance(state);
                 this.cost = cost;
@@ -468,6 +491,7 @@ public final class DeviceSmokeTest {
         throw new AssertionError("Tabuleiro sem solução");
     }
 
+    /** Restaura um ajuste do sistema ou remove seu valor salvo. */
     private static void restore(String key, String value) throws Exception {
         if (value.equals("null")) {
             adb("shell", "settings", "delete", "system", key);
@@ -476,16 +500,19 @@ public final class DeviceSmokeTest {
         }
     }
 
+    /** Aguarda o intervalo indicado antes de continuar o teste. */
     private static void sleep(long millis) throws InterruptedException {
         Thread.sleep(millis);
     }
 
+    /** Interrompe o teste quando um resultado esperado não ocorre. */
     private static void check(boolean condition, String message) {
         if (!condition) {
             throw new AssertionError(message);
         }
     }
 
+    /** Exibe as opções aceitas e encerra o teste com erro. */
     private static void usage(String message) {
         System.err.println(message);
         System.err.println("Uso: java tests/DeviceSmokeTest.java --adb CAMINHO [--serial emulator-5554] [--output DIR] [--history-only]");

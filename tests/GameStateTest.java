@@ -5,12 +5,14 @@ import java.util.Locale;
 
 /** Regressões de estado da partida e tempo ativo, sem Android, mocks ou esperas reais. */
 public final class GameStateTest {
+    /** Executa os testes do estado da partida e do cronômetro. */
     public static void main(String[] args) {
         testGame();
         testTimer();
         System.out.println("OK: restauração, identidade da partida, vitória única e tempo ativo com pausas.");
     }
 
+    /** Confere criação, validação, salvamento e restauração de partidas. */
     private static void testGame() {
         PuzzleGame game = new PuzzleGame();
         check(!game.hasGame() && !game.move(0, 100), "Não jogar antes de começar");
@@ -56,6 +58,7 @@ public final class GameStateTest {
                         && !restored.matchId().equals(game.matchId()), "Nova partida recebe nova identidade");
     }
 
+    /** Confere a medição do tempo ativo com um relógio controlado. */
     private static void testTimer() {
         long[] now = {100};
         GameTimer timer = new GameTimer(() -> now[0]);
@@ -92,6 +95,7 @@ public final class GameStateTest {
         }
     }
 
+    /** Interrompe a suíte quando um resultado esperado não ocorre. */
     private static void check(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }

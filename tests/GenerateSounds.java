@@ -10,12 +10,14 @@ import javax.sound.sampled.AudioSystem;
 public final class GenerateSounds {
     private static final int RATE = 22050;
 
+    /** Gera os arquivos WAV usados pelos efeitos sonoros do jogo. */
     public static void main(String[] args) throws Exception {
         write("move", new double[]{660}, 0.075, 0.0);
         write("shuffle", new double[]{392, 523.25}, 0.085, 0.025);
         write("victory", new double[]{523.25, 659.25, 783.99, 1046.50}, 0.14, 0.025);
     }
 
+    /** Sintetiza uma sequência de notas e grava o resultado como WAV. */
     private static void write(String name, double[] notes, double duration, double gap) throws Exception {
         int noteFrames = (int) (duration * RATE);
         int step = noteFrames + (int) (gap * RATE);

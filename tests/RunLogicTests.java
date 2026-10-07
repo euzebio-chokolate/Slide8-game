@@ -11,6 +11,7 @@ import javax.tools.ToolProvider;
 
 /** Testes do modelo, gestos e cronômetro. Requer apenas JDK, sem SDK Android ou Gradle. */
 public final class RunLogicTests {
+    /** Compila as classes Java puras e executa as suítes de lógica. */
     public static void main(String[] args) throws Exception {
         Path root = Paths.get("").toAbsolutePath();
         Path output = Files.createTempDirectory(Files.createDirectories(root.resolve("build")), "logic-tests-");

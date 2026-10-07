@@ -16,6 +16,7 @@ final class GameSounds {
     private boolean resumed;
     private int stream;
 
+    /** Carrega os efeitos sonoros do aplicativo. */
     GameSounds(Context context) {
         pool = new SoundPool.Builder().setMaxStreams(1)
                 .setAudioAttributes(new AudioAttributes.Builder()
@@ -33,31 +34,37 @@ final class GameSounds {
         samples[VICTORY] = pool.load(context, R.raw.victory, 1);
     }
 
+    /** Reproduz um efeito quando o áudio está ativo e disponível. */
     void play(int effect) {
         if (pool == null || !enabled || !resumed || !loaded[effect]) return;
         stop();
         stream = pool.play(samples[effect], 0.55f, 0.55f, 1, 0, 1f);
     }
 
+    /** Ativa ou silencia os efeitos sonoros. */
     void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) stop();
     }
 
+    /** Permite que os efeitos sejam reproduzidos em primeiro plano. */
     void resume() {
         resumed = true;
     }
 
+    /** Para o efeito atual quando a Activity fica em segundo plano. */
     void pause() {
         resumed = false;
         stop();
     }
 
+    /** Interrompe o fluxo sonoro que estiver em execução. */
     private void stop() {
         if (pool != null && stream != 0) pool.stop(stream);
         stream = 0;
     }
 
+    /** Para a reprodução e libera os recursos de áudio. */
     void release() {
         pause();
         if (pool != null) {

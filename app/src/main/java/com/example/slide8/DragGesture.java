@@ -2,9 +2,11 @@ package com.example.slide8;
 
 /** Geometria do arraste, testável sem Views ou eventos Android. */
 final class DragGesture {
+    /** Impede a criação de instâncias desta classe utilitária. */
     private DragGesture() {}
 
     // Projeção do gesto no único eixo permitido: da peça até o espaço vazio.
+    /** Limita o deslocamento do dedo entre a peça e o espaço vazio. */
     static float dragFraction(float dx, float dy, float targetX, float targetY) {
         float squaredDistance = targetX * targetX + targetY * targetY;
         if (squaredDistance == 0) {
@@ -13,6 +15,7 @@ final class DragGesture {
         return Math.max(0f, Math.min(1f, (dx * targetX + dy * targetY) / squaredDistance));
     }
 
+    /** Decide se o arraste percorreu distância suficiente na direção correta. */
     static boolean shouldCommitDrag(float dx, float dy, float targetX, float targetY) {
         float distance = (float) Math.hypot(targetX, targetY);
         if (distance == 0) {

@@ -31,6 +31,7 @@ final class GameDialogs {
 
     private int dp(int value) { return UiEffects.dp(activity, value); }
 
+    /** Abre o diálogo com as informações do jogo e de seu desenvolvedor. */
     void showAbout() {
         if (aboutDialog != null && aboutDialog.isShowing()) return;
         View content = activity.getLayoutInflater().inflate(R.layout.dialog_about, null);
@@ -39,6 +40,7 @@ final class GameDialogs {
         showStyledDialog(aboutDialog);
     }
 
+    /** Aplica o fundo e o tamanho padrão aos diálogos do jogo. */
     private void showStyledDialog(AlertDialog dialog) {
         dialog.show();
         Window window = dialog.getWindow();
@@ -49,6 +51,7 @@ final class GameDialogs {
         }
     }
 
+    /** Consulta o SQLite e apresenta as partidas concluídas. */
     void showHistory() {
         if (historyDialog != null && historyDialog.isShowing()) return;
         View content = activity.getLayoutInflater().inflate(R.layout.dialog_history, null);
@@ -75,12 +78,15 @@ final class GameDialogs {
             status.setVisibility(View.GONE);
             DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
             list.setAdapter(new ArrayAdapter<GameHistory.Match>(activity, R.layout.item_history, matches) {
+                /** Mantém os registros históricos somente para leitura. */
                 @Override
                 public boolean isEnabled(int position) { return false; }
 
+                /** Informa ao ListView que nenhum registro pode ser selecionado. */
                 @Override
                 public boolean areAllItemsEnabled() { return false; }
 
+                /** Exibe a data, o tempo e os movimentos de uma partida. */
                 @Override
                 public View getView(int position, View convertView, ViewGroup parent) {
                     View row = convertView != null ? convertView
@@ -101,6 +107,7 @@ final class GameDialogs {
         return restartDialog != null && restartDialog.isShowing();
     }
 
+    /** Solicita confirmação antes de descartar uma partida em andamento. */
     void showRestart(Runnable onConfirm, Runnable onDismiss) {
         if (isRestartShowing()) return;
         View content = activity.getLayoutInflater().inflate(R.layout.dialog_restart, null);
@@ -114,6 +121,7 @@ final class GameDialogs {
         showStyledDialog(restartDialog);
     }
 
+    /** Exibe o resultado da vitória e encaminha as ações escolhidas pelo jogador. */
     boolean showVictory(int moves, String elapsed, Runnable onAgain, Runnable onHome, Runnable onCancel) {
         if (victoryDialog != null && victoryDialog.isShowing()) return false;
         View content = activity.getLayoutInflater().inflate(R.layout.dialog_victory, null);
@@ -139,6 +147,7 @@ final class GameDialogs {
         return true;
     }
 
+    /** Fecha os diálogos ao pausar ou encerrar a Activity. */
     void dismissAll() {
         for (AlertDialog dialog : new AlertDialog[]{aboutDialog, historyDialog, restartDialog, victoryDialog}) {
             if (dialog != null) dialog.dismiss();

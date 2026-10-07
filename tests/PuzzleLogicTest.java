@@ -5,6 +5,7 @@ import java.util.Random;
 
 /** Testes da lógica real do jogo, executáveis sem JUnit ou emulador. */
 public final class PuzzleLogicTest {
+    /** Executa os testes de embaralhamento, movimentos e gestos. */
     public static void main(String[] args) {
         int[] solved = {1, 2, 3, 4, 5, 6, 7, 8, 0};
         check(PuzzleGame.isSolved(solved), "Reconhecer vitória");
@@ -69,6 +70,7 @@ public final class PuzzleLogicTest {
         System.out.println("OK: 10.000 embaralhamentos, 81 combinações de movimento, vitória e gestos nas quatro direções.");
     }
 
+    /** Interrompe a suíte se uma condição do jogo não for atendida. */
     private static void check(boolean condition, String message) {
         if (!condition) {
             throw new AssertionError(message);

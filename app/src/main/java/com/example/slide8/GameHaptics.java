@@ -11,6 +11,7 @@ import android.os.VibratorManager;
 final class GameHaptics {
     private final Vibrator vibrator;
 
+    /** Obtém o vibrador padrão disponível no dispositivo. */
     @SuppressWarnings("deprecation")
     GameHaptics(Context context) {
         if (Build.VERSION.SDK_INT >= 31) {
@@ -21,6 +22,7 @@ final class GameHaptics {
         }
     }
 
+    /** Reproduz um padrão curto de vibração ao concluir a partida. */
     @SuppressWarnings("deprecation")
     void victory() {
         if (vibrator == null || !vibrator.hasVibrator()) return;
@@ -35,6 +37,7 @@ final class GameHaptics {
         }
     }
 
+    /** Interrompe a vibração em andamento. */
     void cancel() {
         if (vibrator != null) vibrator.cancel();
     }
