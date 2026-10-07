@@ -254,7 +254,15 @@ Slide8-game/
 │   └── src/main/
 │       ├── AndroidManifest.xml      # Activity inicial, tema e metadados
 │       ├── java/com/example/slide8/
-│       │   ├── MainActivity.java    # Implementação do jogo e preferências
+│       │   ├── MainActivity.java    # Navegação, ciclo de vida e coordenação
+│       │   ├── PuzzleGame.java      # Estado e regras da partida em Java puro
+│       │   ├── BoardController.java # Views, gestos e animações do tabuleiro
+│       │   ├── DragGesture.java     # Cálculos do arraste em Java puro
+│       │   ├── GameTimer.java       # Medição do tempo ativo em Java puro
+│       │   ├── GameDialogs.java     # Sobre, histórico, reinício e vitória
+│       │   ├── GameSettings.java    # Preferências e controles de tema/som
+│       │   ├── GameHaptics.java     # Vibração nativa
+│       │   ├── UiEffects.java       # Dimensões e política de animações
 │       │   ├── GameSounds.java      # Efeitos sonoros nativos
 │       │   └── GameHistory.java     # Histórico persistente com SQLite nativo
 │       └── res/
@@ -278,6 +286,7 @@ Slide8-game/
 │           └── xml/                 # Configurações padrão de backup
 ├── tests/
 │   ├── PuzzleLogicTest.java         # Testes Java sem JUnit
+│   ├── GameStateTest.java           # Restauração, identidade e tempo ativo
 │   ├── RunLogicTests.java           # Compila e executa os testes de lógica
 │   └── DeviceSmokeTest.java         # Teste funcional em emulador
 ├── gradle/
@@ -295,40 +304,44 @@ As pastas `build/` contêm arquivos gerados pela compilação. As configuraçõe
 
 ## Organização do código
 
-O aplicativo possui uma única Activity. Os layouts de início e de jogo ficam
-no mesmo contêiner e são alternados por visibilidade, sem Fragments ou navegação
-por bibliotecas externas.
+O aplicativo possui uma única Activity, responsável por coordenar navegação e
+ciclo de vida. Os layouts de início e de jogo ficam no mesmo contêiner e são
+alternados por visibilidade, sem Fragments ou navegação por bibliotecas externas.
+Regras, gestos, diálogos, preferências e serviços ficam em classes próprias.
 
 ```mermaid
 flowchart TD
-    A[MainActivity] --> B[activity_main.xml]
-    B --> C[screen_home.xml]
-    B --> D[screen_game.xml]
-    C -->|Começar ou continuar| D
-    D -->|Pausar ou voltar| C
-    D -->|Tabuleiro ordenado| E[AlertDialog com dialog_victory.xml]
-    E -->|Jogar de novo| D
-    E -->|Voltar ao início| C
+    A[MainActivity] --> B[PuzzleGame]
+    A --> C[BoardController]
+    C --> B
+    C --> D[DragGesture]
+    A --> E[GameTimer]
+    A --> F[GameDialogs]
+    F --> G[GameHistory / SQLite]
+    A --> G
+    A --> H[GameSettings]
+    H --> I[GameSounds]
+    A --> I
+    A --> J[GameHaptics]
 ```
 
-Os principais métodos de [MainActivity.java](app/src/main/java/com/example/slide8/MainActivity.java)
-estão organizados por responsabilidade:
-
-| Método ou classe | Responsabilidade |
+| Classe | Responsabilidade |
 | --- | --- |
-| `onCreate()` | Conecta as Views, configura os eventos e restaura o estado disponível. |
-| `configureResponsiveLayout()` | Limita a largura do conteúdo e dimensiona as peças. |
-| `showScreen()` | Alterna entre início e jogo e coordena o cronômetro. |
-| `newGame()` / `requestNewGame()` | Criam uma partida e tratam a confirmação de reinício. |
-| `shuffleBoard()` / `isSolvable()` | Geram e validam tabuleiros solucionáveis. |
-| `tryMove()` / `adjacentEmpty()` | Validam a vizinhança e efetuam a troca com o vazio. |
-| `TileTouchListener` | Interpreta os eventos de toque e acompanha o arraste. |
-| `dragFraction()` / `shouldCommitDrag()` | Calculam o deslocamento permitido e aceitam ou rejeitam o gesto. |
-| `animateMove()` / `returnTile()` | Animam o encaixe ou o retorno à origem. |
-| `updateBoard()` | Atualiza números, cores, descrições, movimentos e progresso. |
-| `isSolved()` / `celebrate()` / `showVictoryDialog()` | Detectam e apresentam a vitória. |
-| `startTimer()` / `pauseTimer()` / `updateTimer()` | Controlam o tempo de jogo ativo. |
-| `settleVisuals()` | Cancela animações pendentes e sincroniza as Views com o modelo. |
+| `MainActivity` | Conecta os componentes, alterna telas, salva/restaura o Bundle e coordena os efeitos de cada jogada. |
+| `PuzzleGame` | Encapsula o tabuleiro, movimentos, vitória, identidade e data de conclusão; implementa embaralhamento e regras. |
+| `BoardController` | Renderiza as peças e o progresso, interpreta eventos de toque e controla animações e acessibilidade. |
+| `DragGesture` | Calcula a projeção do arraste e decide se o deslocamento confirma uma jogada. |
+| `GameTimer` | Mede e formata o tempo ativo, usando um relógio monotônico fornecido pela Activity. |
+| `GameDialogs` | Apresenta Sobre, histórico, confirmação de reinício e vitória; devolve ações por callbacks. |
+| `GameSettings` | Persiste tema/som e configura seus controles nas duas telas. |
+| `GameHistory` | Grava e consulta resultados no SQLite fora da thread da interface. |
+| `GameSounds` / `GameHaptics` | Reproduzem áudio e vibração usando o SDK nativo. |
+| `UiEffects` | Compartilha conversão de dp e respeito à configuração de animações do sistema. |
+
+`BoardController` comunica jogadas pelo contrato `Listener`, sem depender da classe
+`MainActivity`. A Activity confirma a jogada em `PuzzleGame` antes da animação e
+coordena tempo, som e gravação da vitória. O modelo não conhece Views, SQLite ou
+o ciclo de vida Android, e não expõe seu array interno para alteração externa.
 
 ## Lógica do quebra-cabeça
 
@@ -347,12 +360,13 @@ linha  = índice / 3
 coluna = índice % 3
 ```
 
-O array guarda a verdade da partida. Os textos e fundos dos botões são uma
-representação visual desse estado.
+O array privado de `PuzzleGame` guarda a verdade da partida. `snapshot()` devolve
+uma cópia para salvar o estado; `BoardController` consulta os valores ao renderizar
+os textos e fundos dos botões.
 
 ### Embaralhamento solucionável
 
-`shuffleBoard()` usa Fisher–Yates para embaralhar os nove valores. Depois verifica
+`PuzzleGame.shuffleBoard()` usa Fisher–Yates para embaralhar os nove valores. Depois verifica
 se o tabuleiro possui solução e se já não está na configuração de vitória.
 
 Uma **inversão** é um par de números que aparece fora da ordem crescente ao ler
@@ -430,8 +444,10 @@ O tempo considera apenas os períodos em que a partida está visível e a Activi
 está retomada. Não corre na tela inicial, durante uma pausa do aplicativo ou após
 a vitória.
 
-A medição usa `SystemClock.elapsedRealtime()`, e não a contagem de execuções do
-Runnable. Assim, atrasos no agendamento não se acumulam no tempo exibido.
+`GameTimer` recebe `SystemClock::elapsedRealtime` da Activity para medir o tempo,
+independentemente da contagem de execuções do Runnable. Assim, atrasos no
+agendamento não se acumulam no tempo exibido. Os testes fornecem um relógio
+controlado para verificar pausas e retomadas sem esperar tempo real.
 
 Um `Handler` associado ao `Looper` principal agenda a atualização a cada **250 ms**.
 O mostrador apresenta minutos e segundos (`mm:ss`). Não existe thread dedicada,
@@ -495,16 +511,16 @@ app/build/reports/lint-results-debug.html
 
 ### Testes de lógica em Java
 
-Depois de compilar o aplicativo:
+Com um JDK instalado, mesmo sem compilar o aplicativo:
 
 ```sh
 java tests/RunLogicTests.java
 ```
 
-O executor [RunLogicTests.java](tests/RunLogicTests.java) utiliza o SDK indicado por `ANDROID_HOME`, `ANDROID_SDK_ROOT` ou
-`local.properties`, compila a Activity real junto com
-[PuzzleLogicTest.java](tests/PuzzleLogicTest.java) e executa seus métodos de lógica
-na JVM. Não instancia uma Activity nem precisa de emulador ou JUnit.
+O executor [RunLogicTests.java](tests/RunLogicTests.java) compila as classes reais
+`PuzzleGame`, `DragGesture` e `GameTimer` junto com
+[PuzzleLogicTest.java](tests/PuzzleLogicTest.java) e [GameStateTest.java](tests/GameStateTest.java).
+Os testes rodam diretamente na JVM, sem SDK Android, Gradle, Activity, emulador ou JUnit.
 
 São verificados:
 
@@ -514,6 +530,9 @@ São verificados:
 - Reconhecimento da vitória e rejeição de uma configuração impossível conhecida.
 - Gestos nas quatro direções, incluindo deslocamentos curtos, contrários e diagonais.
 - Limitação do arraste e ausência de movimento para um toque sem deslocamento.
+- Restauração da partida, proteção do array interno e rejeição de estados inválidos.
+- Preservação do ID e do resultado da vitória, bloqueio de jogadas após vencer e reinício.
+- Tempo ativo, pausas repetidas, retomada, restauração e formatação do cronômetro.
 
 Esses testes ficam na pasta `tests/`, fora dos source sets padrão do Gradle.
 Executar `gradlew test` não substitui `java tests/RunLogicTests.java`. O executor
@@ -573,7 +592,9 @@ acessibilidade.
 | Formato e relevo das peças | `res/drawable/bg_tile.xml` e `bg_tile_correct.xml` |
 | Distância necessária para aceitar um gesto | Constante `0.24f` em `shouldCommitDrag()` |
 | Duração e comportamento das animações | `animateMove()`, `returnTile()`, `showScreen()` e `celebrate()` |
-| Regras, contagem e cronômetro | `MainActivity.java` |
+| Regras e contagem | `PuzzleGame.java` |
+| Tempo de jogo ativo | `GameTimer.java` |
+| Gestos e animações do tabuleiro | `BoardController.java` e `DragGesture.java` |
 
 Para copiar o jogo para outro projeto, leve também os layouts incluídos, os textos,
 os estilos e os fundos XML. Ajuste o pacote Java e o namespace e mantenha o tema
@@ -591,7 +612,6 @@ foi feita para largura ímpar; alterar somente `SIZE` não generaliza o jogo.
 | SDK não encontrado | Confira `sdk.dir` em `local.properties` e os componentes instalados. |
 | Falha na primeira sincronização offline | Permita o download das ferramentas que ainda não estão no cache. |
 | `Permission denied` ao executar `gradlew` | Em sistemas Unix, ajuste a permissão com `chmod +x gradlew`. |
-| `R.jar` ausente nos testes | Execute `:app:assembleDebug` antes de `java tests/RunLogicTests.java`. |
 | Erros de recursos após copiar arquivos | Copie os layouts incluídos, temas, textos e drawables, além da Activity. |
 | ADB não encontra o emulador | Inicie o dispositivo virtual e confira o serial com `adb devices`. |
 | Teste funcional não obtém a hierarquia | Confira se o emulador está desbloqueado e se não há diálogos do sistema cobrindo o jogo. |
